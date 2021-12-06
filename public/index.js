@@ -14,6 +14,24 @@ fetch("/api/transaction")
     populateChart();
   });
 
+function saveRecord(data) {
+  console.log(data)
+  if (!window.indexedDB) {
+    console.log('No support for indexeddb')
+  } else {
+    let db
+    let req = indexedDB.open('transactionDB', 3)
+    req.onerror = event => {
+      console.log("Why didn't you allow my web app to use IndexedDB?!")
+    }
+    req.onupgradeneeded = event => {
+      db = event.target.result
+      let objectStore = db.createObjectStore("transactions", { autoIncrement : true });
+      objectStore.add(data)
+    }
+  }
+}
+
 function populateTotal() {
   // reduce transaction amounts to a single total value
   let total = transactions.reduce((total, t) => {
