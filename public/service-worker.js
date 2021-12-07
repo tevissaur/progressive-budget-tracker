@@ -1,7 +1,7 @@
 const FILES_TO_CACHE = [
-        "./",
-        "./index.html",
-        "./styles.css",
+    "./",
+    "./index.html",
+    "./styles.css",
 ]
 
 
@@ -45,14 +45,21 @@ self.addEventListener("fetch", event => {
     if (
         event.request.method !== "GET" ||
         !event.request.url.startsWith(self.location.origin)
-    ) {
-        event.respondWith(fetch(event.request));
+        ) {
+            console.log(event)
+            event.respondWith(
+            fetch(event.request)
+                .catch(err => {
+                    console.log('inside catch ', err)
+                })
+        );
         return;
     }
 
     // handle runtime GET requests for data from /api routes
-    if (event.request.url.includes("/api/images")) {
+    if (event.request.url.includes("/api/transaction")) {
         // make network request and fallback to cache if network request fails (offline)
+        console.log(event)
         event.respondWith(
             caches.open(RUNTIME_CACHE).then(cache => {
                 return fetch(event.request)

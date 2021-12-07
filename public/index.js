@@ -1,4 +1,6 @@
 let transactions = [];
+let offlineTransactions = [];
+let objectStore
 let myChart;
 
 fetch("/api/transaction")
@@ -12,8 +14,10 @@ fetch("/api/transaction")
     populateTotal();
     populateTable();
     populateChart();
-  });
-
+  })
+  .catch(err => {
+    transactions = objectStore.getAll()
+  })
 function saveRecord(data) {
   console.log(data)
   if (!window.indexedDB) {
@@ -21,14 +25,26 @@ function saveRecord(data) {
   } else {
     let db
     let req = indexedDB.open('transactionDB', 3)
+    let transaction
     req.onerror = event => {
       console.log("Why didn't you allow my web app to use IndexedDB?!")
+    }
+    req.onsuccess = async event => {
+      db = event.target.result
+      transaction = db.transaction(["transactions"], 'readwrite');
+      
+      objectStore = transaction.objectStore('transactions')
+      offlineTransactions.unshift(data)
+      objectStore.add(data)
+      
     }
     req.onupgradeneeded = event => {
       db = event.target.result
       let objectStore = db.createObjectStore("transactions", { autoIncrement : true });
       objectStore.add(data)
     }
+
+
   }
 }
 
@@ -139,7 +155,7 @@ function sendTransaction(isAdding) {
       "Content-Type": "application/json"
     }
   })
-  .then(response => {    
+  .then(response => {
     return response.json();
   })
   .then(data => {
@@ -150,6 +166,22 @@ function sendTransaction(isAdding) {
       // clear form
       nameEl.value = "";
       amountEl.value = "";
+      if (offlineTransactions.length === 0) {
+
+      } else {
+        for (let t of offlineTransactions) {
+          fetch("/api/transaction", {
+            method: "POST",
+            body: JSON.stringify(t),
+            headers: {
+              Accept: "application/json, text/plain, */*",
+              "Content-Type": "application/json"
+            }
+          })
+        }
+        offlineTransactions = []
+
+      }
     }
   })
   .catch(err => {
